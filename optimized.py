@@ -3,6 +3,7 @@ Optimized algorithm to find the best combination of stock actions within a budge
 """
 
 import csv
+import os
 
 BUDGET_EUROS = 500.0
 
@@ -19,10 +20,43 @@ def load_actions(filepath):
         for row in reader:
             name = row["Actions #"]
             cost = float(row["Coût par action (en euros)"])
+
+            if cost <= 0:
+                continue
+
             profit_percent = float(row["Bénéfice (après 2 ans)"].replace("%", ""))
             profit_euros = cost * profit_percent / 100
             actions.append((name, cost, profit_percent, profit_euros))
     return actions
+
+
+def choose_dataset(folder="Data"):
+    """
+    List CSV files in the folder and ask the user to choose one.
+    Returns the full path of the selected file.
+    """
+    csv_files = [f for f in os.listdir(folder) if f.lower().endswith(".csv")]
+
+    if not csv_files:
+        print("Aucun fichier CSV trouvé dans le dossier.")
+        return None
+
+    print("Fichiers disponibles :")
+    for i, filename in enumerate(csv_files, start=1):
+        print(f"  {i}. {filename}")
+
+    choice = input("\nEntrez le numéro du fichier à utiliser : ")
+
+    try:
+        file_index = int(choice) - 1
+        if 0 <= file_index < len(csv_files):
+            return os.path.join(folder, csv_files[file_index])
+        else:
+            print("Numéro invalide.")
+            return None
+    except ValueError:
+        print("Veuillez entrer un nombre valide.")
+        return None
 
 
 def compute_best_portfolio(actions, budget_euro):
@@ -60,7 +94,7 @@ def compute_best_portfolio(actions, budget_euro):
         cost_i = costs[i]
         profit_i = profits[i]
         # Go through budgets from max to min to avoid using the same action multiple times
-        if cost_i > capacity:
+        if cost_i <= 0 or cost_i > capacity:
             # item cannot be taken at any capacity, skip
             continue
         for budget in range(capacity, cost_i - 1, -1):
@@ -96,11 +130,15 @@ def main():
     - Find the best combination
     - Print the best result
     """
-    actions = load_actions("Data/Actions.csv")
+    filepath = choose_dataset()
+    if not filepath:
+        return
+
+    actions = load_actions(filepath)
 
     best_profit, best_combination = compute_best_portfolio(actions, BUDGET_EUROS)
 
-    print("Best combination of stocks found:")
+    print("\nBest combination of stocks found:")
     if not best_combination:
         print("No valid combination within the budget was found.")
     else:
