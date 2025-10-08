@@ -62,7 +62,7 @@ def choose_dataset(folder="Data"):
 def compute_best_portfolio(actions, budget_euro):
     """
     Compute the best combination of actions to maximize profit without exceeding budget.
-    Uses dynamic programming to efficiently find the optimal selection.
+    Uses 0/1 knapsack to ensure each action is chosen at most once.
 
     Args:
         actions: list of (name, cost_euro, percent, profit_euro)
@@ -71,54 +71,38 @@ def compute_best_portfolio(actions, budget_euro):
     Returns:
         (best_profit_euro, best_combination_list)
     """
-    # Convert euros -> cents to use integer indices in DP
-    capacity = int(round(budget_euro * 100))
-
+    capacity = int(budget_euro * 100)  # budget in cents
     n = len(actions)
-    costs = [int(round(action[1] * 100)) for action in actions]  # costs in cents (integers)
-    profits = [action[3] for action in actions]  # profits in euros (floats)
+    costs = [int(action[1] * 100) for action in actions]  # costs in cents
+    profits = [action[3] for action in actions]            # profits in euros
 
-    # Initialize a list to store the best profit for each budget from 0 to capacity (all set to 0 initially)
-    dp = [0.0] * (capacity + 1)
+    # DP table: dp[i][budget] = max profit using first i actions with given budget
+    dp = [[0.0] * (capacity + 1) for _ in range(n + 1)]
 
-    # Initialize a list to track which action (index) was last used to reach each budget.
-    # -1 means no action has been used yet for that budget.
-    last_item = [-1] * (capacity + 1)
+    # Fill DP table
+    for i in range(1, n + 1):
+        cost_i = costs[i - 1]
+        profit_i = profits[i - 1]
+        for current_budget in range(capacity + 1):
+            if cost_i <= current_budget:
+                dp[i][current_budget] = max(
+                    dp[i - 1][current_budget],
+                    dp[i - 1][current_budget - cost_i] + profit_i
+                )
+            else:
+                dp[i][current_budget] = dp[i - 1][current_budget]
 
-    # Initialize a list to track the previous budget for each current budget when an action is taken.
-    # This helps reconstruct the combination of actions that led to the best profit.
-    prev_budget = [-1] * (capacity + 1)
-
-    # Process each item once
-    for i in range(n):
-        cost_i = costs[i]
-        profit_i = profits[i]
-        # Go through budgets from max to min to avoid using the same action multiple times
-        if cost_i <= 0 or cost_i > capacity:
-            # item cannot be taken at any capacity, skip
-            continue
-        for budget in range(capacity, cost_i - 1, -1):
-            candidate = dp[budget - cost_i] + profit_i
-            if candidate > dp[budget]:
-                dp[budget] = candidate
-                last_item[budget] = i
-                prev_budget[budget] = budget - cost_i
-
-    # Find best profit and its budget index
-    best_budget = max(range(capacity + 1), key=lambda x: dp[x])
-    best_profit = dp[best_budget]
-
-    # Reconstruct chosen items by walking back from best_budget
+    # Reconstruct chosen actions
     chosen_indices = []
-    budget = best_budget
-    while budget > 0 and last_item[budget] != -1:
-        i = last_item[budget]
-        chosen_indices.append(i)
-        budget = prev_budget[budget]
+    remaining_budget = capacity
+    for i in range(n, 0, -1):
+        if dp[i][remaining_budget] != dp[i - 1][remaining_budget]:
+            chosen_indices.append(i - 1)
+            remaining_budget -= costs[i - 1]
 
     chosen_indices.reverse()
-
     best_combination = [actions[i] for i in chosen_indices]
+    best_profit = sum(a[3] for a in best_combination)
 
     return best_profit, best_combination
 
