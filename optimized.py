@@ -4,6 +4,7 @@ Optimized algorithm to find the best combination of stock actions within a budge
 
 import csv
 import os
+import time
 
 BUDGET_EUROS = 500.0
 
@@ -120,7 +121,9 @@ def main():
 
     actions = load_actions(filepath)
 
+    start_time = time.time()
     best_profit, best_combination = compute_best_portfolio(actions, BUDGET_EUROS)
+    end_time = time.time()
 
     print("\nBest combination of stocks found:")
     if not best_combination:
@@ -131,6 +134,8 @@ def main():
         total_cost = sum(action[1] for action in best_combination)
         print(f"\nTotal cost = {total_cost:.2f} €")
         print(f"Total profit after 2 years = {best_profit:.2f} €")
+
+    print(f"\nTemps d'exécution : {end_time - start_time:.4f} secondes")
 
 
 if __name__ == "__main__":

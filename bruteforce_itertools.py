@@ -4,6 +4,7 @@ Brute-force algorithm to find the best combination of stock actions within a bud
 
 import csv
 import itertools
+import time
 
 BUDGET = 500
 
@@ -60,7 +61,9 @@ def main():
     """
     actions = load_actions("Data/Actions.csv")
 
+    start_time = time.time()
     best_profit, best_combination = find_best_combination(actions)
+    end_time = time.time()
 
     print("Best combination of stocks found:")
     if not best_combination:
@@ -71,6 +74,8 @@ def main():
         total_cost = sum(action[1] for action in best_combination)
         print(f"\nTotal cost = {total_cost:.2f} €")
         print(f"Total profit after 2 years = {best_profit:.2f} €")
+
+    print(f"\nTemps d'exécution : {end_time - start_time:.4f} secondes")
 
 
 if __name__ == "__main__":
